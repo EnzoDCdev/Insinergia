@@ -1,4 +1,6 @@
-const fetch = require('node-fetch');
+// ✅ NUOVO
+require('dotenv').config();
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
@@ -8,27 +10,53 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
-require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
-const JWT_SECRET = 'Insinergia2025SuperSecretKey123!';
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-key-change-in-production';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
 const dbConfig = {
-    host: 'localhost',
-    port: 8889,
-    user: 'root',
-    password: 'root',
-    database: 'insinergia_db',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 };
 
+app.use(cors({ 
+    origin: CORS_ORIGIN, 
+    credentials: true 
+}));
+
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('.'));
+
+// 🛠 HELPER - Risposte API consistenti
+const apiResponse = {
+    success: (data, message = 'OK') => ({
+        ok: true,
+        data,
+        message
+    }),
+    error: (code, message) => ({
+        ok: false,
+        error: {
+            code,
+            message
+        }
+    }),
+    paginated: (items, page, limit, total) => ({
+        ok: true,
+        data: items,
+        pagination: { page, limit, total }
+    })
+};
 
 const pool = mysql.createPool(dbConfig);
 
