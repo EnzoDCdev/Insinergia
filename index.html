@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insinergia - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: -apple-system, sans-serif; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 25px 45px rgba(0,0,0,0.1); }
+        .logo { text-align: center; margin-bottom: 2rem; }
+        .logo h1 { font-size: 2.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 0.5rem 0; }
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #555; }
+        .input-group input { width: 100%; padding: 1rem 1.25rem; border: 2px solid #e1e5e9; border-radius: 12px; font-size: 1rem; transition: all 0.3s; }
+        .input-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        .btn-primary { width: 100%; padding: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .forgot-link { display: block; text-align: center; margin-top: 1.5rem; color: #667eea; text-decoration: none; }
+        #debug { margin-top: 1rem; padding: 1rem; background: #f0f0f0; border-radius: 8px; font-size: 0.9rem; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 12px; color: white; font-weight: 500; z-index: 10000; transform: translateX(400px); transition: transform 0.3s; }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+    </style>
+</head>
+<body class="theme-light">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>Insinergia</h1>
+                <p>Sistema Gestionale Medico</p>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Username o Email</label>
+                    <input type="text" id="username" value="admin" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" value="password" required>
+                </div>
+                <button type="submit" class="btn-primary">Accedi</button>
+                <a href="#" class="forgot-link">Password dimenticata?</a>
+            </form>
+            <div id="debug"></div>
+        </div>
+    </div>
+
+    <script>
+        // FUNZIONI GLOBALI
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function debug(message) {
+            document.getElementById('debug').innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+            console.log(message);
+        }
+
+        // LOGIN
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            debug('🔄 Tentativo login...');
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                debug(`📤 Invio: ${username}`);
+                
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                debug(`📥 Status: ${response.status}`);
+                const data = await response.json();
+                debug(`📊 Risposta: ${JSON.stringify(data)}`);
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Errore sconosciuto');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                showToast('✅ Login OK! Reindirizzamento...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+                
+            } catch (error) {
+                debug(`❌ ERRORE: ${error.message}`);
+                showToast(`❌ ${error.message}`, 'error');
+            }
+        });
+
+        // TEST SERVER
+        window.addEventListener('load', async () => {
+            try {
+                debug('🧪 Test server...');
+                const test = await fetch('http://localhost:3000/api/test');
+                const testData = await test.json();
+                debug(`✅ Server OK: ${testData.status}`);
+            } catch (error) {
+                debug(`🚨 SERVER NON ATTIVO: ${error.message}`);
+                showToast('🚨 Avvia prima il server: node server.js', 'error');
+            }
+        });
+    </script>
+    <script src="js/theme.js"></script>
+<script>
+    const currentTheme = InsinergiaTheme.loadInitialTheme();
+    InsinergiaTheme.updateToggleLabel(currentTheme);
+</script>
+
+</body>
+</html>

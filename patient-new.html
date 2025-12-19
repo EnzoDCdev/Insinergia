@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuovo paziente - Insinergia</title>
+    <link rel="stylesheet" href="css/patient-new.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="theme-light">
+<nav class="navbar">
+    <div class="nav-brand">Insinergia</div>
+    <div class="nav-right">
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Cambia tema">
+            <span id="themeToggleIcon">🌙</span>
+        </button>
+        <span id="userName" class="user-name"></span>
+        <img id="userAvatarSmall" class="user-avatar-small" alt="Avatar" />
+        <button id="backBtn" class="btn-secondary">Torna alla dashboard</button>
+    </div>
+</nav>
+
+<div class="page-wrapper">
+    <div class="card-form">
+        <h2>Nuovo paziente</h2>
+        <div class="subtitle">Compila i dati anagrafici e di contatto del paziente</div>
+
+        <form id="patientForm">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Nome <span class="required">*</span></label>
+                    <input type="text" id="nome" required>
+                </div>
+                <div class="input-group">
+                    <label>Cognome <span class="required">*</span></label>
+                    <input type="text" id="cognome" required>
+                </div>
+                <div class="input-group">
+                    <label>Data di nascita</label>
+                    <input type="date" id="data_nascita">
+                </div>
+                <div class="input-group">
+                    <label>Sesso <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="sesso" value="M" required> Maschio</label>
+                        <label><input type="radio" name="sesso" value="F" required> Femmina</label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Luogo di nascita</label>
+                    <input type="text" id="luogo_nascita">
+                </div>
+                <div class="input-group">
+                    <label>Codice fiscale</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="codice_fiscale" maxlength="16">
+                        <button type="button" id="generaCFBtn" class="btn-secondary btn-small">⚡ Genera CF</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Indirizzo di residenza</label>
+                    <input type="text" id="indirizzo">
+                </div>
+                <div class="input-group">
+                    <label>Provincia di residenza</label>
+                    <input type="text" id="provincia_residenza" maxlength="2">
+                </div>
+                <div class="input-group">
+                    <label>Comune di residenza</label>
+                    <input type="text" id="comune_residenza">
+                </div>
+                <div class="input-group">
+                    <label>Telefono</label>
+                    <input type="tel" id="telefono">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="email">
+                </div>
+            </div>
+
+            <div class="input-group textarea-note">
+                <label>Note / anamnesi iniziale</label>
+                <textarea id="note" rows="4"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Salva paziente</button>
+                <button type="button" id="cancelBtn" class="btn-secondary">Annulla</button>
+            </div>
+        </form>
+
+        <div id="debug"></div>
+    </div>
+</div>
+
+<script src="js/theme.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/patient-new.js"></script>
+</body>
+</html>

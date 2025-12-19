@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilo utente - Insinergia</title>
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="theme-light">
+<div class="profile-container">
+    <!-- Header -->
+    <div class="profile-header">
+        <div class="profile-header-left">
+            <div class="profile-avatar-wrapper">
+                <img id="avatarImg" src="http://localhost:3000/public/img/default-avatar.png" alt="Avatar">
+            </div>
+            <div class="profile-header-info">
+                <h1 id="displayName">Profilo</h1>
+                <div class="role" id="displayRole"></div>
+            </div>
+        </div>
+        <div class="profile-header-right">
+            <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Cambia tema">
+                <span id="themeToggleIcon">🌙</span>
+            </button>
+            <button type="button" class="btn-secondary" id="backBtn">Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Avatar upload -->
+    <div class="section-title">Foto profilo</div>
+    <div class="avatar-upload">
+        <input type="file" id="avatarFile" accept="image/*">
+        <button class="btn-secondary" id="avatarUploadBtn">Carica foto</button>
+    </div>
+
+    <div class="section-title">Oppure scegli un avatar predefinito</div>
+    <div class="avatar-presets" id="avatarPresets"></div>
+
+    <!-- Dati personali -->
+    <div class="section-title">Dati personali</div>
+    <form id="profileForm">
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="username" disabled>
+            </div>
+            <div class="input-group">
+                <label>Ruolo</label>
+                <input type="text" id="ruolo" disabled>
+            </div>
+            <div class="input-group">
+                <label>Nome e cognome</label>
+                <input type="text" id="nome" required>
+            </div>
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="email" required>
+            </div>
+        </div>
+        <div class="actions-row">
+            <button type="submit" class="btn-primary">Salva profilo</button>
+        </div>
+    </form>
+
+    <!-- Cambio password -->
+    <div class="section-title">Cambio password</div>
+    <form id="passwordForm">
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Password attuale</label>
+                <input type="password" id="currentPassword" required>
+            </div>
+            <div class="input-group">
+                <label>Nuova password</label>
+                <input type="password" id="newPassword" required>
+            </div>
+        </div>
+        <div class="actions-row">
+            <button type="submit" class="btn-primary">Aggiorna password</button>
+        </div>
+    </form>
+
+    <div id="debug"></div>
+</div>
+
+<script src="js/theme.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/profile.js"></script>
+</body>
+</html>

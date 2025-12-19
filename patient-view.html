@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dettaglio paziente - Insinergia</title>
+    <link rel="stylesheet" href="css/patient-view.css" />
+    <link rel="stylesheet" href="css/patient-new.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+
+        <nav class="sidebar-menu">
+          <a href="dashboard.html" class="sidebar-link">
+            <span>Dashboard</span>
+          </a>
+          <a href="patient-new.html" class="sidebar-link">
+            <span>Nuovo paziente</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button id="themeToggleBtn" class="btn-secondary">Tema</button>
+        </div>
+      </aside>
+
+      <!-- CONTENUTO PRINCIPALE -->
+      <div class="main-content">
+        <!-- HEADER TOP -->
+        <header class="topbar">
+          <button id="backBtn" class="btn-secondary">&larr; Indietro</button>
+
+          <div class="topbar-right">
+            <span id="userName"></span>
+            <img
+              id="userAvatarSmall"
+              src=""
+              alt="Avatar"
+              class="avatar-small"
+              style="display: none"
+            />
+          </div>
+        </header>
+
+        <!-- LAYOUT PAZIENTE -->
+        <main class="page-content">
+          <div class="patient-layout">
+            <!-- HEADER PAZIENTE -->
+            <div class="patient-header card-form">
+              <div>
+                <h2 id="patientTitle">Cognome Nome</h2>
+                <div class="patient-header-row">
+                  <span>
+                    Codice paziente:
+                    <strong id="patientCode"></strong>
+                  </span>
+                  <span>
+                    Data nascita:
+                    <span id="patientHeaderDob"></span>
+                  </span>
+                  <span>
+                    Sesso:
+                    <span id="patientHeaderGender"></span>
+                  </span>
+                </div>
+                <div class="patient-header-row">
+                  <span>
+                    CF:
+                    <span id="patientHeaderCF"></span>
+                  </span>
+                  <span>
+                    Telefono:
+                    <span id="patientHeaderPhone"></span>
+                  </span>
+                  <span>
+                    Email:
+                    <span id="patientHeaderEmail"></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="patient-main">
+              <!-- SIDEBAR DOCUMENTI -->
+              <aside class="patient-sidebar">
+                <h3>Documenti</h3>
+                <ul id="documentsList" class="documents-list">
+                  <li>Nessun documento caricato</li>
+                </ul>
+
+                <div class="upload-box">
+                  <h4>Carica documento</h4>
+                  <div class="input-group">
+                    <label for="docTipo">Tipo</label>
+                    <select id="docTipo">
+                      <option value="carta_identita">
+                        Carta d'identità
+                      </option>
+                      <option value="tessera_sanitaria">
+                        Tessera sanitaria
+                      </option>
+                      <option value="analisi_csv">Analisi (CSV)</option>
+                      <option value="altro">Altro</option>
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <input type="file" id="docFile" />
+                  </div>
+                  <button id="uploadDocBtn" class="btn-primary">Carica</button>
+                </div>
+              </aside>
+
+              <!-- CONTENUTO CENTRALE -->
+              <section class="patient-content">
+                <!-- FORM DETTAGLI (ridotta, ma puoi adattarla) -->
+                <div class="card-form" id="patientDetailsCard">
+                  <h3>Dati anagrafici</h3>
+                  <div class="form-grid">
+                    <div class="input-group">
+                      <label for="nome">Nome</label>
+                      <input type="text" id="nome" />
+                    </div>
+                    <div class="input-group">
+                      <label for="cognome">Cognome</label>
+                      <input type="text" id="cognome" />
+                    </div>
+                    <div class="input-group">
+                      <label for="data_nascita">Data di nascita</label>
+                      <input type="date" id="data_nascita" />
+                    </div>
+                    <div class="input-group">
+                      <label for="sesso">Sesso</label>
+                      <select id="sesso">
+                        <option value=""></option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                      </select>
+                    </div>
+                    <div class="input-group">
+                      <label for="luogo_nascita">Luogo di nascita</label>
+                      <input type="text" id="luogo_nascita" />
+                    </div>
+                    <div class="input-group">
+                      <label for="codice_fiscale">Codice fiscale</label>
+                      <input type="text" id="codice_fiscale" />
+                    </div>
+                    <div class="input-group">
+                      <label for="indirizzo">Indirizzo</label>
+                      <input type="text" id="indirizzo" />
+                    </div>
+                    <div class="input-group">
+                      <label for="comune_residenza">Comune residenza</label>
+                      <input type="text" id="comune_residenza" />
+                    </div>
+                    <div class="input-group">
+                      <label for="provincia_residenza">
+                        Provincia residenza
+                      </label>
+                      <input type="text" id="provincia_residenza" />
+                    </div>
+                    <div class="input-group">
+                      <label for="telefono">Telefono</label>
+                      <input type="text" id="telefono" />
+                    </div>
+                    <div class="input-group">
+                      <label for="email">Email</label>
+                      <input type="email" id="email" />
+                    </div>
+                    <div class="input-group full-width">
+                      <label for="note">Note</label>
+                      <textarea id="note" rows="3"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="editBtn" class="btn-secondary">
+                      Modifica
+                    </button>
+                    <button id="saveBtn" class="btn-primary" disabled>
+                      Salva
+                    </button>
+                  </div>
+                </div>
+
+                <!-- VIEWER DOCUMENTO -->
+                <div
+                  class="card-form"
+                  id="documentViewerCard"
+                  style="margin-top: 1rem"
+                >
+                  <h3 id="documentViewerTitle">Documento</h3>
+                  <div id="documentViewerContent">
+                    <p>Seleziona un documento dalla lista a sinistra.</p>
+                  </div>
+                </div>
+
+                <!-- ANALISI -->
+                <div
+                  class="card-form"
+                  id="analisiCard"
+                  style="margin-top: 1rem; display: none"
+                >
+                  <h3>Analisi</h3>
+                  <table style="width: 100%">
+                    <thead>
+                      <tr>
+                        <th>Esame</th>
+                        <th>Valore</th>
+                        <th>Unità</th>
+                      </tr>
+                    </thead>
+                    <tbody id="analisiTableBody">
+                      <tr>
+                        <td colspan="3">Nessun dato analisi</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- LOG ATTIVITÀ -->
+                <div
+                  class="card-form"
+                  id="logsCard"
+                  style="margin-top: 1rem"
+                >
+                  <h3>Log paziente</h3>
+                  <table style="width: 100%">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Utente</th>
+                        <th>Azione</th>
+                      </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                      <tr>
+                        <td colspan="3">Caricamento log...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="js/auth-guard.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/patient-view.js"></script>
+  </body>
+</html>
