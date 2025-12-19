@@ -24,42 +24,17 @@
 
     <!-- CONTENUTO -->
     <div class="content">
-        <!-- TAB NAVIGATION - SOPRA -->
-        <div class="tabs-navigation">
-            <button class="tab-btn active" data-tab="dati">📋 Dati Paziente</button>
-            <button class="tab-btn" data-tab="documenti">📄 Documenti</button>
-            <button class="tab-btn" data-tab="analisi">🧬 Analisi</button>
-            <button class="tab-btn" data-tab="log">📝 Log Modifiche</button>
-        </div>
-
         <!-- HEADER PAZIENTE -->
         <div id="patientHeader" class="patient-header">
             <h2>Caricamento paziente...</h2>
         </div>
 
-        <!-- TAB: DATI PAZIENTE -->
-        <div id="datiTab" class="tab-content active">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Informazioni Paziente</h3>
-                    <button class="btn-primary btn-sm" id="btnEditMode">✏️ Modifica</button>
-                </div>
-                <div class="card-body">
-                    <div id="viewMode" class="patient-data-grid">
-                        <!-- Riempito da JavaScript -->
-                    </div>
-                    <div id="editMode" class="patient-form" style="display: none;">
-                        <!-- Riempito da JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB: DOCUMENTI -->
-        <div id="documentiTab" class="tab-content">
+        <!-- CONTENUTO PRINCIPALE -->
+        <div class="patient-content">
+            <!-- SINISTRA: DOCUMENTI -->
             <div class="card">
                 <h3>📄 Documenti</h3>
-                <div id="documentsList" class="empty-message">Nessun documento caricato</div>
+                <div id="documentsList" class="empty-message">Nessun documento</div>
                 
                 <div class="upload-section">
                     <label>Carica Documento</label>
@@ -69,21 +44,11 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB: ANALISI -->
-        <div id="analisiTab" class="tab-content">
+            <!-- DESTRA: ANALISI -->
             <div class="card">
                 <h3>🧬 Analisi Cliniche</h3>
-                <div id="analysisList" class="empty-message">Nessuna analisi registrata</div>
-            </div>
-        </div>
-
-        <!-- TAB: LOG -->
-        <div id="logTab" class="tab-content">
-            <div class="card">
-                <h3>📝 Log Modifiche</h3>
-                <div id="logList" class="empty-message">Nessuna modifica registrata</div>
+                <div id="analysisList" class="empty-message">Nessuna analisi</div>
             </div>
         </div>
     </div>

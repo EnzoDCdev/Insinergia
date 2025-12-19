@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Insinergia - Login</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/main.css">
     <style>
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: -apple-system, sans-serif; }
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -18,7 +19,7 @@
         .btn-primary { width: 100%; padding: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
         .btn-primary:hover { transform: translateY(-2px); }
         .forgot-link { display: block; text-align: center; margin-top: 1.5rem; color: #667eea; text-decoration: none; }
-        #debug { margin-top: 1rem; padding: 1rem; background: #f0f0f0; border-radius: 8px; font-size: 0.9rem; }
+        #debug { margin-top: 1rem; padding: 1rem; background: #f0f0f0; border-radius: 8px; font-size: 0.9rem; max-height: 150px; overflow-y: auto; }
         .toast { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 12px; color: white; font-weight: 500; z-index: 10000; transform: translateX(400px); transition: transform 0.3s; }
         .toast.show { transform: translateX(0); }
         .toast-success { background: #10b981; }
@@ -33,23 +34,25 @@
                 <p>Sistema Gestionale Medico</p>
             </div>
             <form id="loginForm">
-                <div class="input-group">
-                    <label>Username o Email</label>
-                    <input type="text" id="username" value="admin" required>
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="password" value="password" required>
-                </div>
-                <button type="submit" class="btn-primary">Accedi</button>
-                <a href="#" class="forgot-link">Password dimenticata?</a>
-            </form>
+    <div class="input-group">
+        <label>Username o Email</label>
+        <input type="text" id="emailOrUsername" value="admin" required>
+    </div>
+    <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" value="password" required>
+    </div>
+    <button type="submit" class="btn-primary">Accedi</button>
+</form>
             <div id="debug"></div>
         </div>
     </div>
 
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/theme.js"></script>
     <script>
-        // FUNZIONI GLOBALI
+        // TOAST
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
@@ -60,54 +63,46 @@
         }
 
         function debug(message) {
-            document.getElementById('debug').innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
             console.log(message);
+            const debugDiv = document.getElementById('debug');
+            if (debugDiv) {
+                debugDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+                debugDiv.scrollTop = debugDiv.scrollHeight;
+            }
         }
 
-        // LOGIN
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            debug('🔄 Tentativo login...');
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                debug(`📤 Invio: ${username}`);
-                
-                const response = await fetch('http://localhost:3000/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                debug(`📥 Status: ${response.status}`);
-                const data = await response.json();
-                debug(`📊 Risposta: ${JSON.stringify(data)}`);
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Errore sconosciuto');
-                }
-                
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                showToast('✅ Login OK! Reindirizzamento...', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-                
-            } catch (error) {
-                debug(`❌ ERRORE: ${error.message}`);
-                showToast(`❌ ${error.message}`, 'error');
-            }
-        });
+        // LOGIN FORM
+        // LOGIN FORM
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    debug('🔄 Tentativo login...');
+    
+    const emailOrUsername = document.getElementById('emailOrUsername').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        debug(`📤 Invio: ${emailOrUsername}`);
+        
+        const user = await login(emailOrUsername, password);
+        
+        debug(`✅ Login OK: ${user.email || user.username}`);
+        showToast('✅ Login OK! Reindirizzamento...', 'success');
+        
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 1000);
+        
+    } catch (error) {
+        debug(`❌ ERRORE: ${error.message}`);
+        showToast(`❌ ${error.message}`, 'error');
+    }
+});
 
         // TEST SERVER
         window.addEventListener('load', async () => {
             try {
                 debug('🧪 Test server...');
-                const test = await fetch('http://localhost:3000/api/test');
+                const test = await fetch('/api/test');
                 const testData = await test.json();
                 debug(`✅ Server OK: ${testData.status}`);
             } catch (error) {
@@ -116,11 +111,5 @@
             }
         });
     </script>
-    <script src="js/theme.js"></script>
-<script>
-    const currentTheme = InsinergiaTheme.loadInitialTheme();
-    InsinergiaTheme.updateToggleLabel(currentTheme);
-</script>
-
 </body>
 </html>

@@ -1,36 +1,72 @@
-(function() {
-    const THEME_KEY = 'insinergia-theme';
+/**
+ * THEME - Dark mode toggle
+ */
 
-    function applyTheme(theme) {
-        const body = document.body;
-        body.classList.remove('theme-light', 'theme-dark');
-        body.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+const THEME_KEY = 'insinergia_theme';
+const THEME_CLASS = 'theme-dark';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INIT THEME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initTheme() {
+    const saved = getFromStorage(THEME_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = saved !== null ? saved : prefersDark;
+
+    if (isDark) {
+        enableDarkMode();
+    } else {
+        disableDarkMode();
     }
 
-    function loadInitialTheme() {
-        const saved = localStorage.getItem(THEME_KEY);
-        const prefersDark = window.matchMedia &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = saved || (prefersDark ? 'dark' : 'light');
-        applyTheme(theme);
-        return theme;
-    }
+    log('Theme initialized:', isDark ? 'dark' : 'light');
+}
 
-    function toggleTheme() {
-        const current = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        localStorage.setItem(THEME_KEY, next);
-        applyTheme(next);
-        updateToggleLabel(next);
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TOGGLE THEME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function toggleTheme() {
+    if (document.body.classList.contains(THEME_CLASS)) {
+        disableDarkMode();
+    } else {
+        enableDarkMode();
     }
+}
 
-    function updateToggleLabel(theme) {
-        // icona: luna per light mode (invito a passare a scuro), sole per dark
-        const iconEl = document.getElementById('themeToggleIcon');
-        if (iconEl) {
-            iconEl.textContent = theme === 'dark' ? '☀️' : '🌙';
-        }
+function enableDarkMode() {
+    document.body.classList.add(THEME_CLASS);
+    setToStorage(THEME_KEY, true);
+    updateThemeButton();
+    log('Dark mode enabled');
+}
+
+function disableDarkMode() {
+    document.body.classList.remove(THEME_CLASS);
+    setToStorage(THEME_KEY, false);
+    updateThemeButton();
+    log('Light mode enabled');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BUTTON STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function updateThemeButton() {
+    const btn = document.querySelector('.theme-toggle-btn');
+    if (!btn) return;
+
+    const isDark = document.body.classList.contains(THEME_CLASS);
+    btn.textContent = isDark ? '☀️' : '🌙';
+    btn.title = isDark ? 'Modalità chiara' : 'Modalità scura';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// EVENT LISTENER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+
+    const btn = document.querySelector('.theme-toggle-btn');
+    if (btn) {
+        btn.addEventListener('click', toggleTheme);
     }
-    // expose
-    window.InsinergiaTheme = { toggleTheme, loadInitialTheme, updateToggleLabel };
-})();
+});

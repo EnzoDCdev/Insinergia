@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Insinergia</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+  </head>
+  <body class="theme-light">
+    <nav class="navbar">
+      <div class="nav-brand">🚀 Insinergia Dashboard</div>
+      <div class="nav-right">
+        <button
+          id="themeToggleBtn"
+          class="theme-toggle-btn"
+          type="button"
+          aria-label="Cambia tema"
+        >
+          <span id="themeToggleIcon">🌙</span>
+        </button>
+        <span id="userInfo" class="user-name"></span>
+        <img id="userAvatarSmall" class="user-avatar-small" alt="Avatar" />
+        <button id="logout" class="btn-primary">Logout</button>
+      </div>
+    </nav>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3 id="total">0</h3>
+        <p>Totale Pazienti</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="attivi">0</h3>
+        <p>Attivi</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="sospesi">0</h3>
+        <p>In Sospeso</p>
+      </div>
+      <div class="stat-card" id="adminPanel" style="display: none">
+        <h3>👨‍⚕️ Admin</h3>
+        <p>
+          <button id="newDoctorBtn" class="btn-primary full-width">
+            ➕ Nuovo Medico
+          </button>
+        </p>
+      </div>
+    </div>
+
+    <div class="content">
+      <h2>I Miei Pazienti</h2>
+      <button id="newPatient" class="btn-primary">➕ Nuovo Paziente</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Codice</th>
+            <th>Nome</th>
+            <th>Stato</th>
+            <th>Data</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="patientsList">
+          <tr>
+            <td colspan="5">Caricamento...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="debug"></div>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,224 @@
+/* ═════════════════════════════════════════════════════════
+   MAIN CSS - Insinergia
+   Punto di ingresso per tutti gli stili
+   ═════════════════════════════════════════════════════════ */
+
+/* IMPORTA TUTTI GLI STILI */
+@import 'theme.css';
+@import 'dashboard.css';
+@import 'patient-view.css';
+
+/* ═════════════════════════════════════════════════════════
+   GLOBAL FORM STYLES
+   ═════════════════════════════════════════════════════════ */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.input-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.form-grid .input-group.full-width {
+    grid-column: 1 / -1;
+}
+
+/* ═════════════════════════════════════════════════════════
+   GLOBAL FORM ACTIONS
+   ═════════════════════════════════════════════════════════ */
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border);
+}
+
+/* ═════════════════════════════════════════════════════════
+   LAYOUT APP
+   ═════════════════════════════════════════════════════════ */
+.app-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+.sidebar {
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg);
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    flex: 1;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    text-decoration: none;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.sidebar-link:hover {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary);
+}
+
+.sidebar-footer {
+    display: flex;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border);
+}
+
+/* ═════════════════════════════════════════════════════════
+   MAIN CONTENT
+   ═════════════════════════════════════════════════════════ */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+.topbar {
+    background: var(--bg-card);
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    font-weight: 500;
+}
+
+.page-content {
+    flex: 1;
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+}
+
+/* ═════════════════════════════════════════════════════════
+   ALERTS E NOTIFICHE
+   ═════════════════════════════════════════════════════════ */
+.alert {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background: var(--status-success-bg);
+    border-color: var(--status-success);
+    color: var(--status-success);
+}
+
+.alert-error {
+    background: var(--status-error-bg);
+    border-color: var(--status-error);
+    color: var(--status-error);
+}
+
+.alert-warning {
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning);
+    color: var(--status-warning);
+}
+
+/* ═════════════════════════════════════════════════════════
+   LOADING STATE
+   ═════════════════════════════════════════════════════════ */
+.spinner {
+    border: 2px solid var(--border);
+    border-top: 2px solid var(--primary);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ═════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT
+   ═════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .app-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .page-content {
+        padding: var(--spacing-lg);
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .topbar {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start;
+    }
+
+    .topbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .page-content {
+        padding: var(--spacing-md);
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}

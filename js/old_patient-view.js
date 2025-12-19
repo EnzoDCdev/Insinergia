@@ -1,29 +1,11 @@
 /**
- * PATIENT VIEW - Logica dettaglio paziente con edit e log
+ * PATIENT VIEW - Logica dettaglio paziente
  */
 
 let currentPatient = null;
 let currentPatientId = null;
 let documents = [];
 let analyses = [];
-let logs = [];
-let editMode = false;
-
-const PATIENT_FIELDS = [
-    { key: 'codice_univoco', label: 'Codice Univoco', readonly: true },
-    { key: 'cognome', label: 'Cognome' },
-    { key: 'nome', label: 'Nome' },
-    { key: 'data_nascita', label: 'Data di Nascita', type: 'date' },
-    { key: 'sesso', label: 'Sesso', type: 'select', options: [{ value: '', label: '---' }, { value: 'M', label: 'Maschio' }, { value: 'F', label: 'Femmina' }] },
-    { key: 'luogo_nascita', label: 'Luogo di Nascita' },
-    { key: 'codice_fiscale', label: 'Codice Fiscale' },
-    { key: 'indirizzo', label: 'Indirizzo' },
-    { key: 'provincia_residenza', label: 'Provincia Residenza' },
-    { key: 'comune_residenza', label: 'Comune Residenza' },
-    { key: 'telefono', label: 'Telefono' },
-    { key: 'email', label: 'Email', type: 'email' },
-    { key: 'note', label: 'Note', type: 'textarea' }
-];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // INIT
@@ -58,41 +40,38 @@ async function loadPatientData() {
     try {
         showNotification('Caricamento paziente...', 'info');
 
-        // Carica paziente
+        // Carica paziente (REQUIRED)
         const patientRes = await getPatient(currentPatientId);
         currentPatient = patientRes.data || patientRes;
 
         log('Paziente caricato');
 
+        // Renderizza header
         renderPatientHeader();
-        renderPatientData();
 
-        // Carica documenti
+        // Carica documenti (OPTIONAL - 404 is ok)
         try {
             const docsRes = await getDocuments(currentPatientId);
             documents = docsRes.data || docsRes || [];
+            log('Documenti caricati:', documents.length);
         } catch (err) {
+            warn('Documenti non disponibili:', err.message);
             documents = [];
         }
-        renderDocuments();
 
-        // Carica analisi
+        // Carica analisi (OPTIONAL - 404 is ok)
         try {
             const analysesRes = await getAnalyses(currentPatientId);
             analyses = analysesRes.data || analysesRes || [];
+            log('Analisi caricate:', analyses.length);
         } catch (err) {
+            warn('Analisi non disponibili:', err.message);
             analyses = [];
         }
-        renderAnalyses();
 
-        // Carica log
-        try {
-            const logsRes = await getLogs(currentPatientId);
-            logs = logsRes.data || logsRes || [];
-        } catch (err) {
-            logs = [];
-        }
-        renderLogs();
+        // Renderizza contenuti
+        renderDocuments();
+        renderAnalyses();
 
         showSuccess('Paziente caricato');
     } catch (err) {
@@ -134,6 +113,10 @@ function renderPatientHeader() {
                 <span class="info-value">${currentPatient.telefono || '-'}</span>
             </div>
             <div class="info-item">
+                <span class="info-label">Codice Univoco</span>
+                <span class="info-value">${currentPatient.codice_univoco || '-'}</span>
+            </div>
+            <div class="info-item">
                 <span class="info-label">Aggiunto il</span>
                 <span class="info-value">${formatDate(currentPatient.created_at)}</span>
             </div>
@@ -141,125 +124,6 @@ function renderPatientHeader() {
     `;
 
     document.title = `${currentPatient.cognome} ${currentPatient.nome} - Insinergia`;
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// RENDER PATIENT DATA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function renderPatientData() {
-    const viewMode = document.getElementById('viewMode');
-    const editMode = document.getElementById('editMode');
-
-    // VIEW MODE
-    viewMode.innerHTML = PATIENT_FIELDS.map(field => `
-        <div class="data-item">
-            <span class="data-label">${field.label}</span>
-            <span class="data-value">${currentPatient[field.key] || '-'}</span>
-        </div>
-    `).join('');
-
-    // EDIT MODE
-    editMode.innerHTML = `
-        <form id="patientForm">
-            ${PATIENT_FIELDS.map(field => renderFormField(field)).join('')}
-            <div class="form-actions">
-                <button type="button" class="btn-primary btn-sm" id="btnSave">💾 Salva</button>
-                <button type="button" class="btn-secondary btn-sm" id="btnCancel">❌ Annulla</button>
-            </div>
-        </form>
-    `;
-
-    // Popola form con dati attuali
-    PATIENT_FIELDS.forEach(field => {
-        const input = document.querySelector(`[name="${field.key}"]`);
-        if (input) {
-            input.value = currentPatient[field.key] || '';
-        }
-    });
-}
-
-function renderFormField(field) {
-    if (field.readonly) {
-        return `
-            <div class="form-group">
-                <label>${field.label}</label>
-                <input type="text" value="${currentPatient[field.key]}" readonly>
-            </div>
-        `;
-    }
-
-    if (field.type === 'textarea') {
-        return `
-            <div class="form-group">
-                <label>${field.label}</label>
-                <textarea name="${field.key}"></textarea>
-            </div>
-        `;
-    }
-
-    if (field.type === 'select') {
-        return `
-            <div class="form-group">
-                <label>${field.label}</label>
-                <select name="${field.key}">
-                    ${field.options.map(opt => `
-                        <option value="${opt.value}">${opt.label}</option>
-                    `).join('')}
-                </select>
-            </div>
-        `;
-    }
-
-    return `
-        <div class="form-group">
-            <label>${field.label}</label>
-            <input type="${field.type || 'text'}" name="${field.key}" value="${currentPatient[field.key] || ''}">
-        </div>
-    `;
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// EDIT MODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function toggleEditMode() {
-    editMode = !editMode;
-    document.getElementById('viewMode').style.display = editMode ? 'none' : 'grid';
-    document.getElementById('editMode').style.display = editMode ? 'block' : 'none';
-    document.getElementById('btnEditMode').textContent = editMode ? '✖️ Chiudi' : '✏️ Modifica';
-}
-
-async function savePatient() {
-    const formData = {};
-    PATIENT_FIELDS.forEach(field => {
-        if (!field.readonly) {
-            const input = document.querySelector(`[name="${field.key}"]`);
-            if (input) {
-                formData[field.key] = input.value || null;
-            }
-        }
-    });
-
-    try {
-        showNotification('Salvataggio...', 'info');
-        await updatePatient(currentPatientId, formData);
-        
-        // Aggiorna dati locali
-        Object.assign(currentPatient, formData);
-        
-        editMode = false;
-        renderPatientData();
-        document.getElementById('viewMode').style.display = 'grid';
-        document.getElementById('editMode').style.display = 'none';
-        document.getElementById('btnEditMode').textContent = '✏️ Modifica';
-        
-        // Ricarica tutto per aggiornare log
-        await loadPatientData();
-        
-        showSuccess('Paziente aggiornato');
-    } catch (err) {
-        error('Save error:', err);
-        showError('Errore nel salvataggio');
-    }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -341,33 +205,6 @@ function renderAnalyses() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// RENDER LOGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function renderLogs() {
-    const logList = document.getElementById('logList');
-    if (!logList) return;
-
-    if (logs.length === 0) {
-        logList.innerHTML = '<div class="empty-message">Nessuna modifica registrata</div>';
-        return;
-    }
-
-    logList.innerHTML = logs.map(logEntry => `
-        <div class="log-entry">
-            <div class="log-entry-header">
-                <span class="log-entry-user">👤 ${logEntry.user_nome || logEntry.username}</span>
-                <span class="log-entry-time">${formatDate(logEntry.created_at)}</span>
-            </div>
-            <div class="log-entry-field">📝 ${logEntry.field}</div>
-            <div class="log-entry-change">
-                <div><strong>Valore Precedente:</strong><br><span class="log-old-value">${logEntry.old_value || '(vuoto)'}</span></div>
-                <div><strong>Nuovo Valore:</strong><br><span class="log-new-value">${logEntry.new_value || '(vuoto)'}</span></div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // UPLOAD DOCUMENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function handleUpload() {
@@ -411,40 +248,6 @@ function updateUserDisplay(user) {
 // SETUP LISTENERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function setupEventListeners() {
-    // Tab navigation
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.dataset.tab;
-            
-            // Remove active from all tabs and buttons
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            // Add active to clicked
-            btn.classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-        });
-    });
-
-    // Edit mode
-    const btnEditMode = document.getElementById('btnEditMode');
-    if (btnEditMode) {
-        btnEditMode.addEventListener('click', toggleEditMode);
-    }
-
-    // Save / Cancel
-    document.addEventListener('click', (e) => {
-        if (e.target.id === 'btnSave') {
-            savePatient();
-        }
-        if (e.target.id === 'btnCancel') {
-            editMode = false;
-            document.getElementById('viewMode').style.display = 'grid';
-            document.getElementById('editMode').style.display = 'none';
-            document.getElementById('btnEditMode').textContent = '✏️ Modifica';
-        }
-    });
-
     // Back button
     const backBtn = document.querySelector('[data-action="back"]');
     if (backBtn) {
@@ -457,6 +260,16 @@ function setupEventListeners() {
     const uploadBtn = document.getElementById('btnUpload');
     if (uploadBtn) {
         uploadBtn.addEventListener('click', handleUpload);
+    }
+
+    // File input enter
+    const fileInput = document.getElementById('fileUpload');
+    if (fileInput) {
+        fileInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleUpload();
+            }
+        });
     }
 
     // Logout
@@ -473,11 +286,4 @@ function setupEventListeners() {
     if (themeBtn) {
         themeBtn.addEventListener('click', toggleTheme);
     }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// API HELPER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function getLogs(patientId) {
-    return apiFetch(`/patients/${patientId}/logs`);
 }
