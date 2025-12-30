@@ -219,3 +219,9 @@ function filterBy(array, key, value) {
 function findById(array, id) {
     return array.find(item => item.id === id);
 }
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text == null ? "" : text;
+  return div.innerHTML;
+}

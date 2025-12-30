@@ -357,6 +357,26 @@ app.put('/api/patients/:id', authMiddleware, async (req, res) => {
 });
 
 // 📋 LOGS PAZIENTE
+// POST /api/patients/:id/logs
+app.post('/api/patients/:id/logs', authMiddleware, async (req, res) => {
+    const patientId = req.params.id;
+    const userId = req.user.id; // Dall'authMiddleware
+    const { field, old_value, new_value } = req.body;
+    
+    try {
+        await pool.execute(
+            `INSERT INTO patient_logs (patient_id, user_id, field, old_value, new_value, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [patientId, userId, field, old_value, new_value]
+        );
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Errore creazione log:', err);
+        res.status(500).json({ error: 'Errore creazione log' });
+    }
+});
+
 app.get('/api/patients/:id/logs', authMiddleware, async (req, res) => {
     const id = req.params.id;
     try {
@@ -372,6 +392,35 @@ app.get('/api/patients/:id/logs', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('❌ Errore logs paziente:', err);
         res.status(500).json({ error: 'Errore caricamento log' });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📄 GET DOCUMENTI PAZIENTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.get('/api/patients/:patientId/documents', authMiddleware, async (req, res) => {
+    const patientId = req.params.patientId;
+    console.log('🔍 GET /api/patients/:patientId/documents - patientId:', patientId);
+    
+    try {
+        const [rows] = await pool.execute(
+            `SELECT d.*, u.nome AS user_nome, u.username
+             FROM patient_documents d
+             LEFT JOIN users u ON u.id = d.user_id
+             WHERE d.patient_id = ?
+             ORDER BY d.created_at DESC`,
+            [patientId]
+        );
+        
+        console.log('📄 Documenti trovati:', rows.length);
+        if (rows.length > 0) {
+            console.log('✅ Primo documento:', rows[0]);
+        }
+        
+        res.json({ data: rows });
+    } catch (err) {
+        console.error('❌ Errore get documenti paziente:', err);
+        res.status(500).json({ error: 'Errore caricamento documenti', details: err.message });
     }
 });
 
@@ -405,67 +454,205 @@ const storageProfileUpload = multer.diskStorage({
 
 const upload = multer({ storage: storageProfileUpload });
 
-app.post('/api/patients/:id/documents',
-    authMiddleware,
-    upload.single('file'),
-    async (req, res) => {
+// CONFIGURAZIONE MULTER
+const uploadsDir = path.join(__dirname, 'uploads/patients');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
         const patientId = req.params.id;
-        const userId = req.user.id;
-        const tipo = req.body.tipo;
-
-        try {
-            if (!req.file) {
-                return res.status(400).json({ error: 'Nessun file caricato' });
-            }
-
-            const relativePath = path.join(
-                'uploads',
-                'patients',
-                String(patientId),
-                req.file.filename
-            ).replace(/\\/g, '/');
-
-            const [docResult] = await pool.execute(
-                `INSERT INTO patient_documents (patient_id, user_id, tipo, file_path)
-                 VALUES (?, ?, ?, ?)`,
-                [patientId, userId, tipo, relativePath]
-            );
-
-            await pool.execute(
-                `INSERT INTO patient_logs (patient_id, user_id, field, old_value, new_value)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [patientId, userId, 'document_upload', null, `${tipo} - ${relativePath}`]
-            );
-
-            return res.json({
-                ok: true,
-                file_path: relativePath,
-                document_id: docResult.insertId
-            });
-        } catch (err) {
-            console.error('Errore upload documento:', err);
-            return res.status(500).json({ error: 'Errore salvataggio documento' });
+        const patientDir = path.join(__dirname, 'uploads/patients', String(patientId));
+        
+        // Crea la cartella se non esiste
+        if (!fs.existsSync(patientDir)) {
+            fs.mkdirSync(patientDir, { recursive: true });
         }
-    }
-);
-
-app.get('/api/patients/:id/documents', authMiddleware, async (req, res) => {
-    const patientId = req.params.id;
-    try {
-        const [rows] = await pool.execute(
-            `SELECT d.*, u.nome AS user_nome, u.username
-             FROM patient_documents d
-             JOIN users u ON u.id = d.user_id
-             WHERE d.patient_id = ?
-             ORDER BY d.created_at DESC`,
-            [patientId]
-        );
-        res.json({ data: rows });
-    } catch (err) {
-        console.error('Errore get documenti paziente:', err);
-        res.status(500).json({ error: 'Errore caricamento documenti' });
+        
+        cb(null, patientDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = `doc-${Date.now()}`;
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
+
+const fileFilter = (req, file, cb) => {
+    const allowedMimes = ['image/png', 'image/jpeg', 'application/pdf'];
+    if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Solo .png, .jpg e .pdf sono consentiti'), false);
+    }
+};
+
+const uploadMiddleware = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+});
+
+// POST UPLOAD DOCUMENTO
+app.post('/api/patients/:id/documents', authMiddleware, uploadMiddleware.single('file'), async (req, res) => {
+    const patientId = req.params.id;
+    const userId = req.user.id;
+    const { tipo, descrizione } = req.body;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'File mancante' });
+        }
+
+        if (!tipo || !['ID', 'Codice Fiscale', 'Altro'].includes(tipo)) {
+            return res.status(400).json({ error: 'Tipo documento non valido' });
+        }
+
+        if (tipo === 'Altro' && !descrizione) {
+            return res.status(400).json({ error: 'Descrizione richiesta per "Altro"' });
+        }
+
+        // Crea la cartella del paziente se non esiste
+        const patientDir = path.join(__dirname, 'uploads/patients', String(patientId));
+        if (!fs.existsSync(patientDir)) {
+            fs.mkdirSync(patientDir, { recursive: true });
+        }
+
+        // Crea il nome file
+        const newFileName = `doc-${Date.now()}${path.extname(req.file.originalname)}`;
+        const filePath = `uploads/patients/${patientId}/${newFileName}`;
+
+        // ✅ Se tipo è "Altro", concatena la descrizione
+        let tipoFinale = tipo;
+        if (tipo === 'Altro' && descrizione) {
+            tipoFinale = `Altro - ${descrizione}`;
+        }
+
+        // Salva nel database
+        const result = await pool.execute(
+            `INSERT INTO patient_documents (patient_id, tipo, file_path, file_name, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [patientId, tipoFinale, filePath, req.file.originalname, userId]
+        );
+
+        console.log('✅ Documento caricato:', result[0].insertId, 'Tipo:', tipoFinale);
+
+        res.json({ 
+            success: true, 
+            id: result[0].insertId,
+            file_path: filePath,
+            file_name: req.file.originalname,
+            tipo: tipoFinale
+        });
+    } catch (err) {
+        console.error('❌ Errore upload documento:', err);
+        res.status(500).json({ error: 'Errore caricamento documento', details: err.message });
+    }
+});
+
+app.get('/api/documents/:id/view', authMiddleware, async (req, res) => {
+    const docId = req.params.id;
+    try {
+        const [rows] = await pool.execute(
+            `SELECT * FROM patient_documents WHERE id = ?`,
+            [docId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Documento non trovato' });
+        }
+
+        const doc = rows[0];
+        console.log('📄 Documento trovato:', doc.file_path);
+
+        // Il file_path contiene già il percorso completo relativo (es: uploads/patients/2/doc.csv)
+        // Usa il percorso così com'è
+        let filePath = doc.file_path;
+        
+        // Se non inizia con 'uploads/', aggiungi il percorso completo
+        if (!filePath.startsWith('uploads/')) {
+            filePath = path.join('uploads/documents', path.basename(filePath));
+        }
+        
+        // Crea il percorso assoluto
+        const fullPath = path.join(__dirname, filePath);
+        
+        console.log('📁 Full path:', fullPath);
+        console.log('✅ File exists:', fs.existsSync(fullPath));
+
+        if (!fs.existsSync(fullPath)) {
+            return res.status(404).json({ error: 'File non trovato', path: fullPath });
+        }
+
+        // Determina il MIME type
+        const ext = path.extname(fullPath).toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (ext === '.pdf') mimeType = 'application/pdf';
+        if (ext === '.png') mimeType = 'image/png';
+        if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+        if (ext === '.csv') mimeType = 'text/csv';
+
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', 'inline; filename=' + (doc.file_name || 'documento'));
+        
+        fs.createReadStream(fullPath).pipe(res);
+    } catch (err) {
+        console.error('❌ Errore visualizzazione documento:', err);
+        res.status(500).json({ error: 'Errore visualizzazione documento' });
+    }
+});
+
+// DELETE DOCUMENTO
+app.delete('/api/documents/:id', authMiddleware, async (req, res) => {
+    const docId = req.params.id;
+    const userId = req.user.id;
+
+    try {
+        const [rows] = await pool.execute(
+            `SELECT * FROM patient_documents WHERE id = ?`,
+            [docId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Documento non trovato' });
+        }
+
+        const docData = rows[0];
+        const filePath = path.join(__dirname, 'uploads/patients', path.basename(docData.file_path));
+
+        // Elimina dal database
+        await pool.execute(
+            `DELETE FROM patient_documents WHERE id = ?`,
+            [docId]
+        );
+
+        // Elimina il file fisico
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Crea log
+        await createLogEntry(docData.patient_id, userId, 'documento_eliminato', docData.tipo, null);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Errore eliminazione documento:', err);
+        res.status(500).json({ error: 'Errore eliminazione documento' });
+    }
+});
+
+// HELPER FUNCTION per i log
+async function createLogEntry(patientId, userId, action, oldValue, newValue) {
+    try {
+        await pool.execute(
+            `INSERT INTO patient_logs (patient_id, user_id, field, old_value, new_value, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [patientId, userId, action, oldValue, newValue]
+        );
+    } catch (err) {
+        console.error('Errore creazione log:', err);
+    }
+}
 
 app.get('/api/patient-documents/:id', authMiddleware, async (req, res) => {
     const docId = req.params.id;
@@ -575,12 +762,12 @@ app.get('/api/patients/:patientId/analyses', authMiddleware, async (req, res) =>
 });
 
 // GET - Singola analisi
+// GET singola analisi
 app.get('/api/patients/:patientId/analyses/:analysisId', authMiddleware, async (req, res) => {
     const { patientId, analysisId } = req.params;
     try {
         const [rows] = await pool.execute(
-            `SELECT a.* FROM analyses a
-             WHERE a.id = ? AND a.patient_id = ?`,
+            `SELECT * FROM patient_analyses WHERE id = ? AND patient_id = ?`,
             [analysisId, patientId]
         );
 
@@ -595,42 +782,154 @@ app.get('/api/patients/:patientId/analyses/:analysisId', authMiddleware, async (
     }
 });
 
-// POST - Crea analisi
-app.post('/api/patients/:patientId/analyses', authMiddleware, async (req, res) => {
+// GET valori analisi
+app.get('/api/analyses/:analysisId/values', authMiddleware, async (req, res) => {
+    const { analysisId } = req.params;
+    try {
+        const [rows] = await pool.execute(
+            `SELECT * FROM analysis_values 
+             WHERE analysis_id = ? 
+             ORDER BY test_name ASC`,
+            [analysisId]
+        );
+
+        res.json({ data: rows });
+    } catch (err) {
+        console.error('❌ Errore get valori analisi:', err);
+        res.status(500).json({ error: 'Errore caricamento valori' });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧬 ANALYSES CSV UPLOAD
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Funzione per ottenere i range di riferimento
+async function getReferenceRange(testName, sesso) {
+    const [rows] = await pool.execute(
+        `SELECT reference_min, reference_max, unit 
+         FROM lab_reference_ranges 
+         WHERE test_name = ? AND sesso = ?`,
+        [testName, sesso]
+    );
+    
+    return rows[0] || null;
+}
+
+// Nel parsing del CSV
+app.post('/api/patients/:patientId/analyses', authMiddleware, uploadMiddleware.single('file'), async (req, res) => {
     const patientId = req.params.patientId;
-    const { tipo, valore, unita_misura, abnormal } = req.body;
+    const userId = req.user.id;
+    const { tipo } = req.body;
 
     try {
-        const [patient] = await pool.execute(
-            'SELECT id FROM patients WHERE id = ?',
+        if (!req.file) {
+            return res.status(400).json({ error: 'File mancante' });
+        }
+
+        // ✅ Leggi il sesso del paziente
+        const [patientRows] = await pool.execute(
+            `SELECT sesso FROM patients WHERE id = ?`,
             [patientId]
         );
 
-        if (!patient.length) {
+        if (!patientRows.length) {
             return res.status(404).json({ error: 'Paziente non trovato' });
         }
 
-        const [result] = await pool.execute(
-            `INSERT INTO analyses (patient_id, tipo, valore, unita_misura, abnormal)
-             VALUES (?, ?, ?, ?, ?)`,
-            [patientId, tipo, valore, unita_misura, abnormal || false]
+        const sesso = patientRows[0].sesso;
+        console.log('👥 Sesso paziente:', sesso);
+
+        // Crea la cartella del paziente se non esiste
+        const patientDir = path.join(__dirname, 'uploads/patients', String(patientId));
+        if (!fs.existsSync(patientDir)) {
+            fs.mkdirSync(patientDir, { recursive: true });
+        }
+
+        // Crea il nome file
+        const newFileName = `analysis-${Date.now()}${path.extname(req.file.originalname)}`;
+        const filePath = `uploads/patients/${patientId}/${newFileName}`;
+        const fullFilePath = path.join(patientDir, newFileName);
+
+        // Sposta il file
+        fs.renameSync(req.file.path, fullFilePath);
+
+        // Salva nel database l'analisi
+        const [analysisResult] = await pool.execute(
+            `INSERT INTO patient_analyses (patient_id, tipo, file_path, file_name, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [patientId, tipo, filePath, req.file.originalname, userId]
         );
 
-        console.log('✅ Analisi creata:', result.insertId);
+        const analysisId = analysisResult.insertId;
 
-        res.status(201).json({
-            id: result.insertId,
-            patient_id: patientId,
-            tipo,
-            valore,
-            unita_misura,
-            abnormal: abnormal || false
+        // ✅ Parsa il CSV e inserisci i valori con riferimenti in base al sesso
+        await parseAnalysisCSV(fullFilePath, analysisId, patientId, sesso);
+
+        console.log('✅ Analisi caricata:', analysisId);
+
+        res.json({ 
+            success: true, 
+            id: analysisId,
+            file_path: filePath,
+            file_name: req.file.originalname,
+            tipo: tipo,
+            sesso: sesso
         });
     } catch (err) {
-        console.error('❌ Errore creazione analisi:', err);
-        res.status(500).json({ error: 'Errore creazione analisi' });
+        console.error('❌ Errore upload analisi:', err);
+        res.status(500).json({ error: 'Errore caricamento analisi', details: err.message });
     }
 });
+
+async function parseAnalysisCSV(filePath, analysisId, patientId, sesso) {
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+            .pipe(csv({ separator: ';' }))
+            .on('data', async (row) => {
+                const testName = (row.esame || row.test || row.test_name || '').trim();
+                const value = parseFloat(row.valore || row.value);
+                const unit = (row.unita || row.unit || '').trim();
+
+                if (!testName || isNaN(value)) return;
+
+                // ✅ Ottieni i riferimenti in base al sesso
+                const reference = await getReferenceRange(testName, sesso);
+
+                let isAbnormal = false;
+                let flag = 'N'; // Normal
+
+                if (reference) {
+                    if (value < reference.reference_min) {
+                        isAbnormal = true;
+                        flag = 'L'; // Low
+                    } else if (value > reference.reference_max) {
+                        isAbnormal = true;
+                        flag = 'H'; // High
+                    }
+                }
+
+                // Salva nel database
+                await pool.execute(
+                    `INSERT INTO analysis_values 
+                     (analysis_id, patient_id, test_name, value, unit, reference_min, reference_max, is_abnormal, flag)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        analysisId,
+                        patientId,
+                        testName,
+                        value,
+                        unit,
+                        reference?.reference_min || null,
+                        reference?.reference_max || null,
+                        isAbnormal,
+                        flag
+                    ]
+                );
+            })
+            .on('end', () => resolve())
+            .on('error', reject);
+    });
+}
 
 // PUT - Aggiorna analisi
 app.put('/api/patients/:patientId/analyses/:analysisId', authMiddleware, async (req, res) => {

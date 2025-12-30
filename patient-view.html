@@ -1,91 +1,247 @@
 <!DOCTYPE html>
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dettaglio Paziente - Insinergia</title>
-    <link rel="stylesheet" href="css/theme.css">
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/patient-view.css">
-</head>
-<body class="theme-light">
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/patient-view.css" />
+  </head>
+  <body class="theme-light">
     <!-- NAVBAR -->
     <nav class="navbar">
-        <div class="nav-brand">🏥 Insinergia</div>
-        <div class="nav-right">
-            <span class="user-name"></span>
-            <button class="theme-toggle-btn" title="Tema"></button>
-            <div class="navbar-actions">
-                <button class="btn-primary btn-sm" data-action="back">← Indietro</button>
-                <button class="btn-primary btn-sm" data-action="logout">Logout</button>
-            </div>
+      <div class="nav-brand">🏥 Insinergia</div>
+      <div class="nav-right">
+        <span class="user-name"></span>
+        <button class="theme-toggle-btn" title="Tema"></button>
+        <div class="navbar-actions">
+          <button class="btn-primary btn-sm" data-action="back">
+            ← Indietro
+          </button>
+          <button class="btn-primary btn-sm" data-action="logout">
+            Logout
+          </button>
         </div>
+      </div>
     </nav>
 
     <!-- CONTENUTO -->
     <div class="content">
-        <!-- TAB NAVIGATION - SOPRA -->
-        <div class="tabs-navigation">
-            <button class="tab-btn active" data-tab="dati">📋 Dati Paziente</button>
-            <button class="tab-btn" data-tab="documenti">📄 Documenti</button>
-            <button class="tab-btn" data-tab="analisi">🧬 Analisi</button>
-            <button class="tab-btn" data-tab="log">📝 Log Modifiche</button>
-        </div>
+      <!-- TAB NAVIGATION - SOPRA -->
+      <div class="tabs-navigation">
+        <button class="tab-btn active" data-tab="dati">📋 Dati Paziente</button>
+        <button class="tab-btn" data-tab="documenti">📄 Documenti</button>
+        <button class="tab-btn" data-tab="analisi">🧬 Analisi</button>
+        <button class="tab-btn" data-tab="log">📝 Log Modifiche</button>
+      </div>
 
-        <!-- HEADER PAZIENTE -->
-        <div id="patientHeader" class="patient-header">
-            <h2>Caricamento paziente...</h2>
-        </div>
+      <!-- HEADER PAZIENTE -->
+      <div id="patientHeader" class="patient-header">
+        <h2>Caricamento paziente...</h2>
+      </div>
 
-        <!-- TAB: DATI PAZIENTE -->
-        <div id="datiTab" class="tab-content active">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Informazioni Paziente</h3>
-                    <button class="btn-primary btn-sm" id="btnEditMode">✏️ Modifica</button>
+      <!-- TAB: DATI PAZIENTE -->
+      <div id="datiTab" class="tab-content active">
+        <div class="card">
+          <div class="card-header">
+            <h3>Informazioni Paziente</h3>
+            <button class="btn-primary btn-sm" id="btnEditMode">
+              ✏️ Modifica
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="viewMode" class="patient-data-grid">
+              <!-- Riempito da JavaScript -->
+            </div>
+            <div id="editMode" class="patient-form" style="display: none">
+              <!-- Riempito da JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB DOCUMENTI - Aggiungi questo nel tab-content -->
+      <div id="documenti-tab" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>📄 Documenti</h3>
+          </div>
+          <div class="card-body">
+            <!-- UPLOAD FORM -->
+            <div class="document-upload-section">
+              <h4 class="upload-title">Carica Nuovo Documento</h4>
+
+              <form id="documentUploadForm" class="upload-form">
+                <div class="form-group">
+                  <label for="docType" class="form-label"
+                    >Tipo Documento *</label
+                  >
+                  <select
+                    id="docType"
+                    name="tipo"
+                    class="form-control"
+                    required
+                  >
+                    <option value="">Seleziona tipo...</option>
+                    <option value="ID">Documento di Riconoscimento</option>
+                    <option value="Codice Fiscale">Codice Fiscale</option>
+                    <option value="Altro">Altro</option>
+                  </select>
                 </div>
-                <div class="card-body">
-                    <div id="viewMode" class="patient-data-grid">
-                        <!-- Riempito da JavaScript -->
-                    </div>
-                    <div id="editMode" class="patient-form" style="display: none;">
-                        <!-- Riempito da JavaScript -->
-                    </div>
+
+                <div
+                  class="form-group"
+                  id="descrizioneGroup"
+                  style="display: none"
+                >
+                  <label for="descrizione" class="form-label"
+                    >Descrizione</label
+                  >
+                  <input
+                    type="text"
+                    id="descrizione"
+                    name="descrizione"
+                    class="form-control"
+                    placeholder="Es: Certificato medico"
+                  />
                 </div>
-            </div>
-        </div>
 
-        <!-- TAB: DOCUMENTI -->
-        <div id="documentiTab" class="tab-content">
-            <div class="card">
-                <h3>📄 Documenti</h3>
-                <div id="documentsList" class="empty-message">Nessun documento caricato</div>
-                
-                <div class="upload-section">
-                    <label>Carica Documento</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="fileUpload" accept=".pdf,.jpg,.jpeg,.png">
-                        <button class="btn-primary btn-sm" id="btnUpload">Carica</button>
-                    </div>
+                <!-- DRAG DROP ZONE -->
+                <div class="file-upload-zone" id="fileDropZone">
+                  <svg
+                    class="upload-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <p class="upload-text">
+                    Trascina i file qui o
+                    <span class="upload-link">clicca per selezionare</span>
+                  </p>
+                  <p class="upload-hint">PNG, JPG, PDF - Max 10MB</p>
+                  <input
+                    type="file"
+                    id="fileInput"
+                    name="file"
+                    accept=".png,.jpg,.jpeg,.pdf"
+                    style="display: none"
+                  />
                 </div>
-            </div>
-        </div>
 
-        <!-- TAB: ANALISI -->
-        <div id="analisiTab" class="tab-content">
-            <div class="card">
-                <h3>🧬 Analisi Cliniche</h3>
-                <div id="analysisList" class="empty-message">Nessuna analisi registrata</div>
-            </div>
-        </div>
+                <div
+                  id="uploadProgress"
+                  class="upload-progress"
+                  style="display: none"
+                >
+                  <div class="progress-bar"></div>
+                  <p class="progress-text">Caricamento in corso...</p>
+                </div>
 
-        <!-- TAB: LOG -->
-        <div id="logTab" class="tab-content">
-            <div class="card">
-                <h3>📝 Log Modifiche</h3>
-                <div id="logList" class="empty-message">Nessuna modifica registrata</div>
+                <button
+                  type="submit"
+                  class="btn btn--primary btn--full-width"
+                  id="submitBtn"
+                >
+                  Carica Documento
+                </button>
+              </form>
             </div>
+
+            <!-- DOCUMENTI LIST -->
+            <div class="documents-list-section">
+              <h4 class="documents-title">Documenti Caricati</h4>
+              <div id="documentsList" class="documents-list">
+                <!-- Documenti caricati via JS -->
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- TAB: ANALISI -->
+<div id="analisiTab" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <h3>🧬 Analisi Cliniche</h3>
+    </div>
+    <div class="card-body">
+      <!-- UPLOAD FORM -->
+      <div class="document-upload-section">
+        <h4 class="upload-title">Carica File Analisi (CSV)</h4>
+
+        <form id="analysisUploadForm" class="upload-form">
+          <div class="form-group">
+            <label for="analysisType" class="form-label">Tipo Analisi *</label>
+            <select id="analysisType" name="tipo" class="form-control" required>
+              <option value="">Seleziona tipo...</option>
+              <option value="Esame Sangue">Esame Sangue</option>
+              <option value="Esame Urine">Esame Urine</option>
+              <option value="Esame Feci">Esame Feci</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+
+          <!-- DRAG DROP ZONE -->
+          <div class="file-upload-zone" id="analysisDropZone">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="upload-text">
+              Trascina il CSV qui o
+              <span class="upload-link">clicca per selezionare</span>
+            </p>
+            <p class="upload-hint">CSV - Max 10MB</p>
+            <input
+              type="file"
+              id="analysisFileInput"
+              name="file"
+              accept=".csv"
+              style="display: none"
+            />
+          </div>
+
+          <div id="analysisUploadProgress" class="upload-progress" style="display: none">
+            <div class="progress-bar"></div>
+            <p class="progress-text">Caricamento in corso...</p>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full-width">
+            Carica Analisi
+          </button>
+        </form>
+      </div>
+
+      <!-- ANALISI LIST -->
+      <div class="analyses-list-section" style="margin-top: 30px;">
+        <h4 class="documents-title">Analisi Caricate</h4>
+        <div id="analysisList" class="analyses-list">
+          <!-- Analisi caricate via JS -->
+        </div>
+        <div id="noAnalyses" class="no-documents">
+          <p>Nessuna analisi caricata</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- TAB: LOG -->
+      <div id="logTab" class="tab-content">
+        <div class="card">
+          <h3>📝 Log Modifiche</h3>
+          <div id="logList" class="empty-message">
+            Nessuna modifica registrata
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- SCRIPTS -->
@@ -94,5 +250,5 @@
     <script src="js/api.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/patient-view.js"></script>
-</body>
+  </body>
 </html>
