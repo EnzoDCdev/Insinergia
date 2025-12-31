@@ -50,7 +50,15 @@ const DEFAULT_AVATAR = 'public/img/default-avatar.png';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const authMiddleware = async (req, res, next) => {
     try {
-        let token = req.headers.authorization;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+        //let token = req.headers.authorization;
+
+        console.log('🔍 AUTH HEADER:', authHeader);
+        console.log('🔍 TOKEN (primi 50 char):', token ? token.substring(0, 50) + '...' : 'NONE');
+        console.log('🔍 TOKEN LENGTH:', token ? token.length : 0);
+        console.log('🔍 JWT_SECRET LENGTH:', JWT_SECRET ? JWT_SECRET.length : 0);
         
         if (!token) {
             console.log('❌ NO AUTH HEADER');
@@ -138,9 +146,11 @@ app.post('/api/auth/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, username: user.username, ruolo: user.ruolo },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '12h' }
         );
-
+        const decoded = jwt.decode(token);
+        console.log('NEW TOKEN:', token);
+        console.log('PAYLOAD:', decoded);
         console.log('✅ Login OK:', user.username);
 
         res.json({
@@ -745,18 +755,25 @@ app.get('/api/patient-documents/:documentId/analyses', authMiddleware, async (re
 // 🧬 ANALYSES ENDPOINTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GET - Lista analisi paziente
+// 📊 GET ANALISI PAZIENTE
 app.get('/api/patients/:patientId/analyses', authMiddleware, async (req, res) => {
     const patientId = req.params.patientId;
+    console.log('🧪 GET /api/patients/:patientId/analyses - patientId:', patientId);
+    
     try {
         const [rows] = await pool.execute(
-            `SELECT a.* FROM analyses a
+            `SELECT a.*, u.nome AS user_nome, u.username
+             FROM patient_analyses a
+             LEFT JOIN users u ON u.id = a.user_id
              WHERE a.patient_id = ?
              ORDER BY a.created_at DESC`,
             [patientId]
         );
+        
+        console.log('🧪 Analisi trovate:', rows.length);
         res.json({ data: rows });
     } catch (err) {
-        console.error('❌ Errore get analisi paziente:', err);
+        console.error('❌ Errore get analisi:', err);
         res.status(500).json({ error: 'Errore caricamento analisi' });
     }
 });
@@ -800,9 +817,147 @@ app.get('/api/analyses/:analysisId/values', authMiddleware, async (req, res) => 
     }
 });
 
+// GET SINGOLA ANALISI
+app.get('/api/analyses/:id', authMiddleware, async (req, res) => {
+    const id = req.params.id;
+    console.log('🔍 GET /api/analyses/:id - analysisId:', id);
+    
+    try {
+        const [rows] = await pool.execute(
+            `SELECT a.*, u.nome AS user_nome, u.username, u.avatar
+             FROM patient_analyses a
+             LEFT JOIN users u ON u.id = a.user_id
+             WHERE a.id = ?`,
+            [id]
+        );
+        
+        if (!rows[0]) {
+            console.log('❌ Analisi non trovata:', id);
+            return res.status(404).json({ error: 'Analisi non trovata' });
+        }
+        
+        console.log('✅ Analisi trovata:', rows[0].file_name);
+        res.json({ data: rows[0] });
+        
+    } catch (err) {
+        console.error('❌ Errore get analisi:', err);
+        res.status(500).json({ error: 'Errore caricamento analisi' });
+    }
+});
+
+// 📊 GET VALORI ANALISI
+app.get('/api/analyses/:id/values', authMiddleware, async (req, res) => {
+    const analysisId = req.params.id;
+    console.log('🔍 GET /api/analyses/:id/values - analysisId:', analysisId);
+    
+    try {
+        const [rows] = await pool.execute(
+            `SELECT 
+                av.*,
+                CASE 
+                    WHEN av.value > av.reference_max THEN 'H'
+                    WHEN av.value < av.reference_min THEN 'L'
+                    ELSE 'N'
+                END as flag,
+                CASE 
+                    WHEN av.value > av.reference_max OR av.value < av.reference_min THEN 1
+                    ELSE 0
+                END as is_abnormal
+             FROM analysis_values av
+             WHERE av.analysis_id = ?
+             ORDER BY av.test_name`,
+            [analysisId]
+        );
+        
+        console.log('✅ Valori analisi:', rows.length);
+        res.json({ data: rows });
+        
+    } catch (err) {
+        console.error('❌ Errore valori analisi:', err);
+        // 404 se tabella vuota o non esiste
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+            console.log('ℹ️ Tabella analysis_values non ancora creata');
+            return res.json({ data: [] });
+        }
+        res.status(500).json({ error: 'Errore caricamento valori' });
+    }
+});
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🧬 ANALYSES CSV UPLOAD
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📄 FILE FILTER PER ANALISI - PIÙ PERMISSIVO
+const analysisFileFilter = (req, file, cb) => {
+    const allowedAnalyses = [
+        'image/png', 'image/jpeg', 'image/jpg', 'image/tiff',
+        'application/pdf',
+        'text/csv', 'application/csv',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    if (allowedAnalyses.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`File ${file.originalname} non consentito. Usa PDF, immagini, CSV, Excel`), false);
+    }
+};
+
+// 📊 UPLOAD ANALISI - MULTER DEDICATO
+const analysisStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const patientId = req.params.id;
+        const analysisDir = path.join(__dirname, 'uploads', 'patients', String(patientId), 'analyses');
+        if (!fs.existsSync(analysisDir)) {
+            fs.mkdirSync(analysisDir, { recursive: true });
+        }
+        cb(null, analysisDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = `analysis-${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const analysisUpload = multer({
+    storage: analysisStorage,
+    fileFilter: analysisFileFilter, // 🔧 NUOVO FILTER
+    limits: { fileSize: 20 * 1024 * 1024 } // 20MB per analisi
+});
+
+// POST ANALISI
+app.post('/api/patients/:id/analyses', authMiddleware, analysisUpload.single('file'), async (req, res) => {
+    const patientId = req.params.id;
+    const userId = req.user.id;
+    const { tipo, descrizione } = req.body;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'File mancante' });
+        }
+
+        const filePath = `uploads/patients/${patientId}/analyses/${req.file.filename}`;
+        
+        const result = await pool.execute(
+            `INSERT INTO patient_analyses (patient_id, tipo, file_path, file_name, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [patientId, tipo || 'Analisi', filePath, req.file.originalname, userId]
+        );
+
+        console.log('✅ Analisi caricata:', req.file.originalname);
+        res.json({
+            success: true,
+            id: result[0].insertId,
+            file_path: filePath,
+            file_name: req.file.originalname
+        });
+    } catch (err) {
+        console.error('❌ Upload analisi error:', err);
+        res.status(500).json({ error: 'Errore upload analisi' });
+    }
+});
+
+
 // Funzione per ottenere i range di riferimento
 async function getReferenceRange(testName, sesso) {
     const [rows] = await pool.execute(

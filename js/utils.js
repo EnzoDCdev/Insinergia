@@ -64,36 +64,6 @@ function isValidPhone(phone) {
 function isEmpty(value) {
     return value === null || value === undefined || value === '';
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STORAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function getFromStorage(key) {
-    try {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : null;
-    } catch (err) {
-        error('Storage get error:', err);
-        return null;
-    }
-}
-
-function setToStorage(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {
-        error('Storage set error:', err);
-    }
-}
-
-function removeFromStorage(key) {
-    try {
-        localStorage.removeItem(key);
-    } catch (err) {
-        error('Storage remove error:', err);
-    }
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // DOM UTILS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

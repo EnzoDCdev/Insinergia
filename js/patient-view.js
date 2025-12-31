@@ -1,8 +1,11 @@
-/**
- * PATIENT VIEW - Logica dettaglio paziente con edit e log
- * VERSIONE COMPLETA - Con tutte le funzioni e helpers
- * Upload documenti e analisi completamente separati
- */
+// 🔧 UTILITIES - OBBLIGATORIE
+function log(message, data) {
+    console.log('[PATIENT]', message, data || '');
+}
+
+function error(message, data) {
+    console.error('[PATIENT] ERROR:', message, data || '');
+}
 
 let currentPatient = null;
 let currentPatientId = null;
@@ -80,64 +83,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function getToken() {
-    return localStorage.getItem('token');
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // API CALLS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function apiFetch(endpoint, options = {}) {
-    const token = localStorage.getItem('token');
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-    
-    const url = endpoint.startsWith('http') ? endpoint : `http://localhost:3000/api${endpoint}`;
-    const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
-    
-    if (!res.ok) {
-        if (res.status === 404) {
-            console.warn(`404: ${endpoint}`);
-            return { data: [] };
-        }
-        throw new Error(`API Error: ${res.status}`);
-    }
-    
-    return res.json();
-}
-
-async function getPatient(id) {
-    return apiFetch(`/patients/${id}`);
-}
-
-async function getDocuments(patientId) {
-    try {
-        return apiFetch(`/patients/${patientId}/documents`);
-    } catch (err) {
-        console.warn('Documenti non disponibili');
-        return { data: [] };
-    }
-}
-
-async function getAnalyses(patientId) {
-    try {
-        return apiFetch(`/patients/${patientId}/analyses`);
-    } catch (err) {
-        console.warn('Analisi non disponibili');
-        return { data: [] };
-    }
-}
-
-async function getLogs(patientId) {
-    try {
-        return apiFetch(`/patients/${patientId}/logs`);
-    } catch (err) {
-        console.warn('Log non disponibili');
-        return { data: [] };
-    }
+function getToken() {
+    const token = localStorage.getItem(TOKEN_KEY);
+    return token || null;
 }
 
 async function updatePatient(id, data) {
@@ -175,7 +126,19 @@ async function createLogEntry(fieldKey, oldValue, newValue) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     log('Patient view loading...');
-
+console.log('🔍 === PATIENT VIEW DEBUG ===');
+    
+    // 🔍 TEST 1: LocalStorage raw
+    console.log('🔍 LocalStorage.keys:', Object.keys(localStorage));
+    console.log('🔍 insinergia_token raw:', localStorage.getItem('insinergia_token'));
+    
+    // 🔍 TEST 2: Costanti auth.js
+    console.log('🔍 TOKEN_KEY:', typeof TOKEN_KEY !== 'undefined' ? TOKEN_KEY : 'NON DEFINITA');
+    
+    // 🔍 TEST 3: Funzioni auth
+    console.log('🔍 getToken():', getToken());
+    console.log('🔍 getFromStorage:', typeof getFromStorage === 'function' ? 'OK' : 'MANCANTE');
+    
     if (!requireAuth()) return;
 
     const user = getUser();

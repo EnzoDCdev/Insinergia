@@ -157,3 +157,68 @@ function setupEventListeners() {
     });
   }
 }
+
+
+//patient-view.js
+async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    const url = endpoint.startsWith('http') ? endpoint : `http://localhost:3000/api${endpoint}`;
+    const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+    
+    if (!res.ok) {
+        if (res.status === 404) {
+            console.warn(`404: ${endpoint}`);
+            return { data: [] };
+        }
+        throw new Error(`API Error: ${res.status}`);
+    }
+    
+    return res.json();
+}
+
+// api.js
+async function apiFetch(endpoint, options = {}) {
+    try {
+        const url = `${API_BASE}${endpoint}`;
+        const token = getToken();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        log(`[API] ${options.method || 'GET'} ${endpoint}`);
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        // Se 401, logout automatico
+        if (response.status === 401) {
+            warn('Token expired, logging out');
+            logout();
+            throw new Error('Unauthorized');
+        }
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        error('API error:', err);
+        throw err;
+    }
+}

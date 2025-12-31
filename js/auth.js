@@ -9,16 +9,68 @@ const USER_KEY = 'insinergia_user';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GET USER & TOKEN
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STORAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const STORAGE = localStorage;
+
+function getFromStorage(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        console.error('Storage read error:', key, e);
+        return null;
+    }
+}
+
+function setToStorage(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.error('Storage write error:', key, e);
+        return false;
+    }
+}
+
+function removeFromStorage(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (e) {
+        console.error('Storage remove error:', key, e);
+    }
+}
+
 function getToken() {
-    return getFromStorage(TOKEN_KEY);
+    const token = getFromStorage(TOKEN_KEY);
+    console.log('🔍 getToken DEBUG:', {
+        raw: token ? token.substring(0, 20) + '...' : 'NULL',
+        hasToken: !!token,
+        trimmed: token ? token.trim().substring(0, 20) + '...' : 'NULL',
+        length: token ? token.length : 0,
+        trimmedLength: token ? token.trim().length : 0
+    });
+    return token && token.trim() ? token.trim() : null;
 }
 
 function getUser() {
-    return getFromStorage(USER_KEY);
+    try {
+        const userStr = getFromStorage(USER_KEY);
+        if (!userStr || userStr === 'null' || userStr === '[object Object]') {
+            return null;
+        }
+        return JSON.parse(userStr);
+    } catch (e) {
+        console.error('❌ getUser JSON.parse error:', userStr, e);
+        removeFromStorage(USER_KEY); // Pulisci dato corrotto
+        return null;
+    }
 }
 
 function isAuthenticated() {
-    return !!getToken() && !!getUser();
+    const token = getToken();
+    const user = getUser();
+    return !!token && !!user;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -26,36 +78,29 @@ function isAuthenticated() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function login(emailOrUsername, password) {
     try {
-        log('Login attempt:', emailOrUsername);
+        // 🔄 Pulisci SEMPRE prima
+        removeFromStorage(TOKEN_KEY);
+        removeFromStorage(USER_KEY);
 
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                emailOrUsername, 
-                password 
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emailOrUsername, password })
         });
 
-        log('Login response status:', response.status);
-
         const data = await response.json();
-        log('Login response data:', data);
 
-        if (!response.ok) {
-            throw new Error(data.message || `Login failed: ${response.status}`);
+        if (!response.ok || !data.token || !data.user) {
+            throw new Error(data.message || 'Login failed');
         }
 
-        if (!data.token || !data.user) {
-            throw new Error('Invalid response: missing token or user');
-        }
-        
-        setToStorage(TOKEN_KEY, data.token);
-        setToStorage(USER_KEY, data.user);
+        // 💾 SALVA
+        const tokenSaved = setToStorage(TOKEN_KEY, data.token);
+        const userSaved = setToStorage(USER_KEY, JSON.stringify(data.user));
 
-        log('Login success, token stored:', data.token);
+        console.log('💾 Login saved:', { tokenSaved, userSaved });
+        console.log('🔍 Verify:', { token: getToken() ? 'OK' : 'FAIL', user: getUser() ? 'OK' : 'FAIL' });
+
         return data.user;
     } catch (err) {
         error('Login error:', err);
@@ -80,7 +125,7 @@ function logout() {
 function requireAuth() {
     if (!isAuthenticated()) {
         log('Not authenticated, redirecting to login');
-        window.location.href = '/index.html';
+        //window.location.href = '/index.html';
         return false;
     }
     return true;

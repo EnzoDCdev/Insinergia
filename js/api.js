@@ -8,44 +8,40 @@ const API_BASE = '/api';
 // HELPER FETCH
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function apiFetch(endpoint, options = {}) {
-    try {
-        const url = `${API_BASE}${endpoint}`;
-        const token = getToken();
+  try {
+    const url = `${API_BASE}${endpoint}`;
+    const token = getToken();
 
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
+    console.log('🔍 apiFetch', endpoint, 'TOKEN:', token ? token.substring(0, 20) + '...' : 'NONE');
 
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
 
-        log(`[API] ${options.method || 'GET'} ${endpoint}`);
-
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-
-        // Se 401, logout automatico
-        if (response.status === 401) {
-            warn('Token expired, logging out');
-            logout();
-            throw new Error('Unauthorized');
-        }
-
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.message || `API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (err) {
-        error('API error:', err);
-        throw err;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`.trim();
+      console.log('🔍 SENDING AUTH:', headers['Authorization'].substring(0, 30) + '...');
     }
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401) {
+      console.warn('Token expired or invalid, logging out');
+      logout();
+      throw new Error('Unauthorized');
+    }
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || `API error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    error('API error:', err);
+    throw err;
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -59,6 +55,24 @@ async function getPatients(filters = {}) {
 async function getPatient(id) {
     return apiFetch(`/patients/${id}`);
 }
+
+async function getDocuments(patientId) {
+    return apiFetch(`/patients/${patientId}/documents`);
+}
+
+async function getAnalyses(patientId) {
+    return apiFetch(`/patients/${patientId}/analyses`);
+}
+
+async function getLogs(patientId) {
+    return apiFetch(`/patients/${patientId}/logs`);
+}
+
+window.getPatient = getPatient;
+window.getDocuments = getDocuments;
+window.getAnalyses = getAnalyses;
+window.getLogs = getLogs;
+window.getPatients = getPatients;
 
 async function createPatient(data) {
     return apiFetch('/patients', {
@@ -97,7 +111,7 @@ async function uploadDocument(patientId, formData) {
     const headers = {};
 
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`.trim();
     }
 
     log(`[API] POST /patients/${patientId}/documents/upload`);
@@ -134,9 +148,17 @@ async function getAnalyses(patientId) {
     return apiFetch(`/patients/${patientId}/analyses`);
 }
 
-async function getAnalysis(patientId, analysisId) {
-    return apiFetch(`/patients/${patientId}/analyses/${analysisId}`);
+// 🔧 FUNZIONI MANCANTI
+async function getAnalysis(id) {
+    return apiFetch(`/analyses/${id}`);
 }
+
+async function getAnalysisValues(analysisId) {
+    return apiFetch(`/analyses/${analysisId}/values`);
+}
+
+window.getAnalysis = getAnalysis;
+window.getAnalysisValues = getAnalysisValues;
 
 async function createAnalysis(patientId, data) {
     return apiFetch(`/patients/${patientId}/analyses`, {
@@ -163,8 +185,4 @@ async function deleteAnalysis(patientId, analysisId) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function getDashboardStats() {
     return apiFetch('/dashboard/stats');
-}
-
-async function getLogs() {
-    return apiFetch('/logs');
 }
